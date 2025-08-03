@@ -73,10 +73,10 @@ internal/
 - **`gosec ./...`** - Security vulnerability scanning
 
 **AWS Lambda Container Development:**
-- **Build for Linux**: `GOOS=linux GOARCH=amd64 go build -o bootstrap cmd/api/main.go`
+- **Build for Linux**: `GOOS=linux GOARCH=amd64 go build -o main cmd/api/main.go`
 - **Docker build**: Multi-stage builds with Go 1.22+ base images
 - **Local testing**: Use AWS Lambda Runtime Interface Emulator
-- **Entry point**: Executable must be named `bootstrap` for `provided` runtime
+- **Entry point**: Executable name is specified in ENTRYPOINT directive
 
 **Development Environment:**
 - Use `CGO_ENABLED=0` for most Lambda deployments

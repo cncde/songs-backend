@@ -22,13 +22,13 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
-    -o bootstrap .
+    -o main .
 
 # Final stage - use AWS Lambda base image
 FROM public.ecr.aws/lambda/provided:al2023-arm64
 
 # Copy the binary from builder stage
-COPY --from=builder /app/bootstrap /bootstrap
+COPY --from=builder /app/main /main
 
 # Copy timezone data if needed
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
@@ -37,10 +37,10 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Set the executable as the entry point
-ENTRYPOINT ["/bootstrap"]
+ENTRYPOINT ["/main"]
 
 # Alternative: Use scratch base for minimal image size
 # FROM scratch
-# COPY --from=builder /app/bootstrap /bootstrap
+# COPY --from=builder /app/main /main
 # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-# ENTRYPOINT ["/bootstrap"]
+# ENTRYPOINT ["/main"]

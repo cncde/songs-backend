@@ -90,7 +90,7 @@ go test ./...                   # Run tests
 
 # Go Build Validation
 go build ./...                  # Verify compilation
-GOOS=linux GOARCH=amd64 go build -o bootstrap cmd/api/main.go  # Lambda build
+GOOS=linux GOARCH=amd64 go build -o main cmd/api/main.go  # Lambda build
 
 # AWS Lambda Container Validation
 test -f Dockerfile && echo "Dockerfile found" || echo "Dockerfile needed for Lambda"

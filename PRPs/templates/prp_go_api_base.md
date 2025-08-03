@@ -3,17 +3,24 @@ name: "Go REST API PRP"
 description: "Production-ready Go REST API with AWS Lambda, JWT authentication, DynamoDB, and S3 integration"
 ---
 
+# Go REST API PRP
+
 ## Purpose
 
-Develop a secure, scalable Go REST API with containerized AWS Lambda deployment, JWT authentication via AWS Cognito, DynamoDB data persistence, and S3 file handling capabilities.
+Develop a secure, scalable Go REST API with containerized AWS Lambda
+deployment, JWT authentication via AWS Cognito, DynamoDB data persistence,
+and S3 file handling capabilities.
 
 ## Core Principles
 
 1. **Go Idiomatic Code**: Follow effective Go patterns and conventions
-2. **Security First**: Implement comprehensive authentication, authorization, and input validation
+2. **Security First**: Implement comprehensive authentication, authorization,
+   and input validation
 3. **AWS Native**: Leverage AWS services with proper integration patterns
-4. **Production Ready**: Include comprehensive testing, monitoring, and deployment automation
-5. **Performance Optimized**: Design for scalability and efficient resource utilization
+4. **Production Ready**: Include comprehensive testing, monitoring, and
+   deployment automation
+5. **Performance Optimized**: Design for scalability and efficient resource
+   utilization
 
 ---
 
@@ -21,13 +28,15 @@ Develop a secure, scalable Go REST API with containerized AWS Lambda deployment,
 
 **[DESCRIBE YOUR SPECIFIC GO API GOAL HERE]**
 
-Example: Build a user management API that handles user registration, profile management, and file uploads with secure authentication and efficient data storage.
+Example: Build a user management API that handles user registration, profile management,
+and file uploads with secure authentication and efficient data storage.
 
 ## Why
 
 **[EXPLAIN THE BUSINESS VALUE AND TECHNICAL REQUIREMENTS]**
 
 Example:
+
 - **Scalability**: Handle variable load with serverless architecture
 - **Security**: Protect user data with enterprise-grade authentication
 - **Cost Efficiency**: Pay only for actual usage with Lambda pricing
@@ -39,6 +48,7 @@ Example:
 ### Technical Requirements
 
 **API Capabilities:**
+
 - [ ] RESTful API design following OpenAPI standards
 - [ ] JWT authentication with AWS Cognito integration
 - [ ] CRUD operations with DynamoDB backend
@@ -48,6 +58,7 @@ Example:
 - [ ] Comprehensive logging and monitoring
 
 **AWS Integration:**
+
 - [ ] Lambda containerized deployment
 - [ ] DynamoDB table design and operations
 - [ ] S3 bucket configuration and access
@@ -56,6 +67,7 @@ Example:
 - [ ] CloudWatch logging and monitoring
 
 **Development Workflow:**
+
 - [ ] Go modules dependency management
 - [ ] Comprehensive test suite (unit + integration)
 - [ ] GitHub Actions CI/CD pipeline
@@ -68,6 +80,7 @@ Example:
 ### Go Framework Research (WEB SEARCH REQUIRED)
 
 **HTTP Framework Selection:**
+
 ```yaml
 Research Areas:
 - Gin Framework: Performance benchmarks, middleware patterns, JSON handling
@@ -83,6 +96,7 @@ Web Search Queries:
 ```
 
 **Project Structure Patterns:**
+
 ```yaml
 Standard Go Layout Research:
 - /cmd: Application executables and entry points
@@ -101,6 +115,7 @@ Additional Directories:
 ### AWS Integration Patterns (WEB SEARCH REQUIRED)
 
 **Lambda Container Deployment:**
+
 ```yaml
 Research Requirements:
 - Multi-stage Dockerfile patterns for Go Lambda
@@ -117,6 +132,7 @@ Implementation Patterns:
 ```
 
 **DynamoDB Integration:**
+
 ```yaml
 AWS SDK for Go v2 Patterns:
 - Client initialization with context and configuration
@@ -133,6 +149,7 @@ Data Modeling:
 ```
 
 **S3 File Handling:**
+
 ```yaml
 Upload Patterns:
 - Single-part uploads for small files
@@ -152,6 +169,7 @@ Security Considerations:
 ### Authentication & Security (WEB SEARCH REQUIRED)
 
 **AWS Cognito JWT Integration:**
+
 ```yaml
 Implementation Requirements:
 - JWKS (JSON Web Key Set) retrieval and caching
@@ -167,6 +185,7 @@ Go Libraries:
 ```
 
 **Security Headers and Validation:**
+
 ```yaml
 Input Validation:
 - Request body validation with struct tags
@@ -184,6 +203,7 @@ Security Headers:
 ### Testing Strategy (GO-SPECIFIC PATTERNS)
 
 **Unit Testing Patterns:**
+
 ```yaml
 Table-Driven Tests:
 - Multiple test cases in single test function
@@ -199,6 +219,7 @@ HTTP Handler Testing:
 ```
 
 **Integration Testing:**
+
 ```yaml
 AWS Service Integration:
 - DynamoDB Local for local testing
@@ -210,6 +231,7 @@ AWS Service Integration:
 ## Implementation Blueprint
 
 ### Phase 1: Project Foundation
+
 ```yaml
 Setup Tasks:
 1. Initialize Go module with proper dependencies
@@ -227,6 +249,7 @@ Dependencies to Add:
 ```
 
 ### Phase 2: AWS Integration
+
 ```yaml
 AWS Setup:
 1. Configure AWS SDK v2 clients (DynamoDB, S3)
@@ -243,6 +266,7 @@ Infrastructure:
 ```
 
 ### Phase 3: Authentication & Security
+
 ```yaml
 Security Implementation:
 1. JWT middleware with AWS Cognito integration
@@ -259,6 +283,7 @@ Authentication Flow:
 ```
 
 ### Phase 4: API Implementation
+
 ```yaml
 Core API Features:
 1. User management endpoints (CRUD operations)
@@ -275,6 +300,7 @@ Response Patterns:
 ```
 
 ### Phase 5: Testing & Quality
+
 ```yaml
 Testing Implementation:
 1. Unit tests for all service functions
@@ -291,6 +317,7 @@ Quality Assurance:
 ```
 
 ### Phase 6: Deployment & Monitoring
+
 ```yaml
 CI/CD Pipeline:
 1. GitHub Actions workflow for testing and building
@@ -309,6 +336,7 @@ Monitoring Setup:
 ## Validation Loop
 
 ### Level 1: Go Code Quality
+
 ```bash
 # Dependencies and module validation
 go mod tidy && go mod verify                    # Clean and verify dependencies
@@ -321,10 +349,11 @@ gosec ./...                                    # Security vulnerability scan
 
 # Build validation
 go build ./...                                 # Build all packages
-GOOS=linux GOARCH=amd64 go build -o bootstrap cmd/api/main.go  # Lambda build
+GOOS=linux GOARCH=amd64 go build -o main cmd/api/main.go  # Lambda build
 ```
 
 ### Level 2: Testing Validation
+
 ```bash
 # Test execution
 go test ./...                                  # Run all tests
@@ -337,6 +366,7 @@ go test -bench=. ./internal/api/...           # Performance benchmarks
 ```
 
 ### Level 3: Security Validation
+
 ```bash
 # Security scanning
 gosec ./... | tee security-report.txt         # Security vulnerability report
@@ -349,6 +379,7 @@ curl -X GET http://localhost:8080/api/v1/protected \
 ```
 
 ### Level 4: AWS Integration Testing
+
 ```bash
 # AWS credentials and service validation
 aws sts get-caller-identity                    # Verify AWS credentials
@@ -361,6 +392,7 @@ curl -f http://localhost:3000/health          # Health check
 ```
 
 ### Level 5: Container and Deployment
+
 ```bash
 # Docker build validation
 docker build -t go-api:test .                 # Build container image
@@ -376,6 +408,7 @@ test -f .github/workflows/deploy.yml && echo "✓ GitHub Actions configured"
 ## Success Criteria
 
 ### Functional Requirements
+
 - [ ] All API endpoints implemented and tested
 - [ ] JWT authentication working with AWS Cognito
 - [ ] DynamoDB operations functioning correctly
@@ -384,6 +417,7 @@ test -f .github/workflows/deploy.yml && echo "✓ GitHub Actions configured"
 - [ ] API documentation complete and accurate
 
 ### Quality Requirements
+
 - [ ] Test coverage above 80%
 - [ ] All linting checks pass
 - [ ] Security scan shows no critical issues
@@ -392,6 +426,7 @@ test -f .github/workflows/deploy.yml && echo "✓ GitHub Actions configured"
 - [ ] Documentation is clear and complete
 
 ### Deployment Requirements
+
 - [ ] Docker container builds successfully
 - [ ] Lambda deployment works without errors
 - [ ] CI/CD pipeline executes successfully
@@ -400,6 +435,7 @@ test -f .github/workflows/deploy.yml && echo "✓ GitHub Actions configured"
 - [ ] Post-deployment smoke tests pass
 
 ### Production Readiness
+
 - [ ] Environment-specific configuration working
 - [ ] Security headers and CORS configured
 - [ ] Rate limiting implemented and tested
@@ -412,6 +448,7 @@ test -f .github/workflows/deploy.yml && echo "✓ GitHub Actions configured"
 ## Common Patterns & Examples
 
 ### HTTP Handler Pattern
+
 ```go
 func (h *UserHandler) GetUser(c *gin.Context) {
     userID := c.Param("id")
@@ -439,8 +476,10 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 ```
 
 ### DynamoDB Repository Pattern
+
 ```go
-func (r *UserRepository) GetUser(ctx context.Context, id string) (*models.User, error) {
+func (r *UserRepository) GetUser(ctx context.Context, \
+    id string) (*models.User, error) {
     result, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
         TableName: aws.String(r.table),
         Key: map[string]types.AttributeValue{
@@ -466,8 +505,10 @@ func (r *UserRepository) GetUser(ctx context.Context, id string) (*models.User, 
 ```
 
 ### S3 Upload Pattern
+
 ```go
-func (s *FileService) UploadFile(ctx context.Context, file io.Reader, key, contentType string) error {
+func (s *FileService) UploadFile(ctx context.Context, file io.Reader, \
+    key, contentType string) error {
     _, err := s.s3Client.PutObject(ctx, &s3.PutObjectInput{
         Bucket:      aws.String(s.bucket),
         Key:         aws.String(key),
@@ -487,6 +528,7 @@ func (s *FileService) UploadFile(ctx context.Context, file io.Reader, key, conte
 ```
 
 ### Table-Driven Test Pattern
+
 ```go
 func TestUserValidation(t *testing.T) {
     tests := []struct {
@@ -529,6 +571,7 @@ func TestUserValidation(t *testing.T) {
 ## Gotchas & Common Issues
 
 ### Go-Specific Gotchas
+
 - **Error Handling**: Always check and handle errors explicitly
 - **Goroutine Leaks**: Ensure proper cleanup of goroutines
 - **Context Cancellation**: Respect context cancellation in long-running operations
@@ -536,6 +579,7 @@ func TestUserValidation(t *testing.T) {
 - **Memory Management**: Be aware of memory allocation in hot paths
 
 ### AWS Lambda Gotchas
+
 - **Cold Starts**: Optimize initialization code and container size
 - **Timeout Limits**: Design for Lambda's maximum execution time
 - **Memory Configuration**: Right-size memory allocation for cost and performance
@@ -543,6 +587,7 @@ func TestUserValidation(t *testing.T) {
 - **Concurrent Execution**: Understand Lambda's concurrent execution limits
 
 ### DynamoDB Gotchas
+
 - **Hot Partitions**: Design keys to distribute load evenly
 - **Query Limitations**: Understand query vs scan performance implications
 - **Item Size Limits**: Keep items under 400KB limit
@@ -550,6 +595,7 @@ func TestUserValidation(t *testing.T) {
 - **Throttling**: Implement exponential backoff for throttled requests
 
 ### Security Gotchas
+
 - **JWT Validation**: Always validate all claims, not just signature
 - **Input Sanitization**: Validate all inputs, including file uploads
 - **CORS Configuration**: Configure CORS properly for web applications

@@ -140,11 +140,11 @@ v1 := r.Group("/api/v1")
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap cmd/api/main.go
+RUN GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o main cmd/api/main.go
 
 FROM public.ecr.aws/lambda/provided:al2023
-COPY --from=builder /app/bootstrap ./bootstrap
-ENTRYPOINT [ "./bootstrap" ]
+COPY --from=builder /app/main ./main
+ENTRYPOINT [ "./main" ]
 ```
 
 **Lambda Handler Pattern:**
@@ -349,7 +349,7 @@ gosec ./...
 
 # Build validation
 go build ./...
-GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap cmd/api/main.go
+GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o main cmd/api/main.go
 ```
 
 ### Level 2: Testing Validation

@@ -1,0 +1,1542 @@
+openapi: 3.0.3
+info:
+  title: Songs Backend API
+  description: |
+    A production-ready REST API for managing songs and comments with AWS Lambda deployment.
+    
+    ## Features
+    - Song management with stage support (draft, review, published, archived)
+    - Comments on song audio files with user attribution
+    - Secure S3-based media upload/download
+    - JWT authentication via AWS Cognito
+    - DynamoDB for scalable storage
+    
+    ## Authentication
+    All protected endpoints require a JWT Bearer token from AWS Cognito.
+    Include the token in the Authorization header: `Bearer <jwt-token>`
+  version: 1.0.0
+  contact:
+    name: Songs API Support
+    url: https://github.com/cncde/songs-backend
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://your-lambda-url.lambda-url.us-east-1.on.aws
+    description: Production Lambda server
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns API health status and basic information
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: songs-api
+                  version:
+                    type: string
+                    example: v1
+              example:
+                status: healthy
+                service: songs-api
+                version: v1
+
+  /api/v1/public/songs:
+    get:
+      summary: List published songs
+      description: Retrieve a list of all published songs (no authentication required)
+      tags:
+        - Public Songs
+      parameters:
+        - name: limit
+          in: query
+          description: Number of songs to return (max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor for next page
+          required: false
+          schema:
+            type: string
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          required: false
+          schema:
+            type: string
+            example: "rock,acoustic"
+      responses:
+        '200':
+          description: List of published songs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongsListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/public/songs/{id}:
+    get:
+      summary: Get published song details
+      description: Get details of a published song by ID (no authentication required)
+      tags:
+        - Public Songs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Song details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/public/songs/search:
+    get:
+      summary: Search published songs
+      description: Search published songs by title, subtitle, or tags
+      tags:
+        - Public Songs
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            minLength: 1
+            example: "acoustic"
+        - name: limit
+          in: query
+          description: Number of results to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongsListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/songs:
+    get:
+      summary: List user's songs
+      description: Get all songs owned by the authenticated user
+      tags:
+        - Songs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stage
+          in: query
+          description: Filter by stage
+          required: false
+          schema:
+            type: string
+            enum: [draft, review, published, archived]
+        - name: limit
+          in: query
+          description: Number of songs to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User's songs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create a new song
+      description: Create a new song in draft stage
+      tags:
+        - Songs
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSongRequest'
+      responses:
+        '201':
+          description: Song created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/songs/{id}:
+    get:
+      summary: Get song details
+      description: Get details of a song owned by the authenticated user
+      tags:
+        - Songs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Song details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update song
+      description: Update song details (only if not archived)
+      tags:
+        - Songs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSongRequest'
+      responses:
+        '200':
+          description: Song updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete song
+      description: Delete a song and all associated comments
+      tags:
+        - Songs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Song deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Song deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/songs/{id}/images:
+    post:
+      summary: Add image to song
+      description: Add an image URL to the song
+      tags:
+        - Song Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: S3 URL of the uploaded image
+                  example: "https://songs-media.s3.amazonaws.com/images/uuid.jpg"
+      responses:
+        '200':
+          description: Image added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Image URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Remove image from song
+      description: Remove an image URL from the song
+      tags:
+        - Song Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: S3 URL of the image to remove
+      responses:
+        '200':
+          description: Image removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/songs/{id}/audio:
+    post:
+      summary: Add audio to song
+      description: Add an audio file URL to the song
+      tags:
+        - Song Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: S3 URL of the uploaded audio file
+                  example: "https://songs-media.s3.amazonaws.com/audio/uuid.mp3"
+      responses:
+        '200':
+          description: Audio added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Audio URL already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Remove audio from song
+      description: Remove an audio file URL from the song
+      tags:
+        - Song Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: S3 URL of the audio file to remove
+      responses:
+        '200':
+          description: Audio removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/songs/{id}/comments:
+    get:
+      summary: List song comments
+      description: Get all comments for a specific song
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+        - name: audio_url
+          in: query
+          description: Filter comments by specific audio file URL
+          required: false
+          schema:
+            type: string
+            format: uri
+        - name: limit
+          in: query
+          description: Number of comments to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Song comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create comment on song
+      description: Add a comment to a specific audio file of a song
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Song ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/comments/{id}:
+    get:
+      summary: Get comment details
+      description: Get details of a specific comment
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Comment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update comment
+      description: Update comment content (only by comment owner)
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete comment
+      description: Delete a comment (only by comment owner)
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Comment deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/comments:
+    get:
+      summary: List user's comments
+      description: Get all comments made by the authenticated user
+      tags:
+        - Comments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: song_id
+          in: query
+          description: Filter by specific song
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Number of comments to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User's comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/media/upload-url:
+    post:
+      summary: Generate presigned upload URL
+      description: Generate a presigned URL for uploading files to S3
+      tags:
+        - Media
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+                - content_type
+              properties:
+                filename:
+                  type: string
+                  description: Original filename
+                  example: "song.mp3"
+                content_type:
+                  type: string
+                  description: MIME type of the file
+                  example: "audio/mpeg"
+                file_size:
+                  type: integer
+                  description: File size in bytes (for validation)
+                  example: 5242880
+      responses:
+        '200':
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Presigned URL for uploading
+                  file_key:
+                    type: string
+                    description: S3 key for the uploaded file
+                  expires_in:
+                    type: integer
+                    description: URL expiration time in seconds
+                    example: 3600
+              example:
+                upload_url: "https://songs-media.s3.amazonaws.com/upload-url"
+                file_key: "audio/user-123/uuid.mp3"
+                expires_in: 3600
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/media/download-url/{fileKey}:
+    get:
+      summary: Generate presigned download URL
+      description: Generate a presigned URL for downloading files from S3
+      tags:
+        - Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileKey
+          in: path
+          required: true
+          description: S3 file key
+          schema:
+            type: string
+            example: "audio/user-123/uuid.mp3"
+      responses:
+        '200':
+          description: Presigned download URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    format: uri
+                    description: Presigned URL for downloading
+                  expires_in:
+                    type: integer
+                    description: URL expiration time in seconds
+                    example: 3600
+              example:
+                download_url: "https://songs-media.s3.amazonaws.com/download-url"
+                expires_in: 3600
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/media/{fileKey}:
+    delete:
+      summary: Delete media file
+      description: Delete a media file from S3 (only by file owner)
+      tags:
+        - Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileKey
+          in: path
+          required: true
+          description: S3 file key
+          schema:
+            type: string
+            example: "audio/user-123/uuid.mp3"
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: File deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/media/files:
+    get:
+      summary: List user's files
+      description: List all media files owned by the authenticated user
+      tags:
+        - Media
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by file type
+          required: false
+          schema:
+            type: string
+            enum: [image, audio]
+        - name: limit
+          in: query
+          description: Number of files to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: User's media files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: "audio/user-123/uuid.mp3"
+                        url:
+                          type: string
+                          format: uri
+                          example: "https://songs-media.s3.amazonaws.com/audio/user-123/uuid.mp3"
+                        size:
+                          type: integer
+                          description: File size in bytes
+                          example: 5242880
+                        content_type:
+                          type: string
+                          example: "audio/mpeg"
+                        uploaded_at:
+                          type: string
+                          format: date-time
+                          example: "2024-01-01T00:00:00Z"
+                  count:
+                    type: integer
+                    example: 15
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/stats/songs:
+    get:
+      summary: Get song statistics
+      description: Get statistics about the user's songs
+      tags:
+        - Statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Song statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_songs:
+                    type: integer
+                    example: 25
+                  by_stage:
+                    type: object
+                    properties:
+                      draft:
+                        type: integer
+                        example: 10
+                      review:
+                        type: integer
+                        example: 5
+                      published:
+                        type: integer
+                        example: 8
+                      archived:
+                        type: integer
+                        example: 2
+                  most_used_tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                          example: "rock"
+                        count:
+                          type: integer
+                          example: 15
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/stats/comments:
+    get:
+      summary: Get comment statistics
+      description: Get statistics about the user's comments
+      tags:
+        - Statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Comment statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_comments:
+                    type: integer
+                    example: 50
+                  comments_received:
+                    type: integer
+                    description: Comments on user's songs
+                    example: 30
+                  comments_made:
+                    type: integer
+                    description: Comments made by user
+                    example: 20
+                  recent_activity:
+                    type: object
+                    properties:
+                      last_7_days:
+                        type: integer
+                        example: 5
+                      last_30_days:
+                        type: integer
+                        example: 15
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/stats/media:
+    get:
+      summary: Get media statistics
+      description: Get statistics about the user's media files
+      tags:
+        - Statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Media statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_files:
+                    type: integer
+                    example: 40
+                  by_type:
+                    type: object
+                    properties:
+                      images:
+                        type: integer
+                        example: 15
+                      audio:
+                        type: integer
+                        example: 25
+                  total_size:
+                    type: integer
+                    description: Total size in bytes
+                    example: 209715200
+                  storage_usage:
+                    type: string
+                    description: Human readable storage usage
+                    example: "200 MB"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token from AWS Cognito. Include in the Authorization header as: Bearer <token>
+        
+        Required JWT claims:
+        - sub: User ID
+        - cognito:username: Username  
+        - email: User email
+        - token_use: access or id
+        - iss: Cognito issuer URL
+        - exp: Expiration timestamp
+        - iat: Issued at timestamp
+
+  schemas:
+    Song:
+      type: object
+      required:
+        - id
+        - title
+        - stage
+        - user_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique song identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Song title
+          example: "Acoustic Dreams"
+        subtitle:
+          type: string
+          maxLength: 255
+          description: Optional song subtitle
+          example: "A Journey Through Sound"
+        description:
+          type: string
+          maxLength: 2000
+          description: Song description
+          example: "An acoustic piece that explores themes of hope and renewal"
+        image_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Array of image URLs
+          example: ["https://songs-media.s3.amazonaws.com/images/uuid1.jpg"]
+        audio_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Array of audio file URLs
+          example: ["https://songs-media.s3.amazonaws.com/audio/uuid1.mp3"]
+        lyrics:
+          type: string
+          maxLength: 10000
+          description: Song lyrics
+          example: "Verse 1:\nIn the quiet of the morning..."
+        stage:
+          type: string
+          enum: [draft, review, published, archived]
+          description: Current stage of the song
+          example: "published"
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Song tags for categorization
+          example: ["acoustic", "folk", "indie"]
+        user_id:
+          type: string
+          description: ID of the song owner
+          example: "user-123"
+        created_at:
+          type: string
+          format: date-time
+          description: Song creation timestamp
+          example: "2024-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T12:00:00Z"
+
+    CreateSongRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Song title
+          example: "New Song Title"
+        subtitle:
+          type: string
+          maxLength: 255
+          description: Optional subtitle
+          example: "A Musical Journey"
+        description:
+          type: string
+          maxLength: 2000
+          description: Song description
+          example: "This song explores themes of love and loss"
+        lyrics:
+          type: string
+          maxLength: 10000
+          description: Song lyrics
+          example: "Verse 1:\nWords of the song..."
+        stage:
+          type: string
+          enum: [draft, review, published]
+          default: draft
+          description: Initial stage (cannot be archived)
+          example: "draft"
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Song tags
+          example: ["rock", "acoustic"]
+
+    UpdateSongRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Updated song title
+        subtitle:
+          type: string
+          maxLength: 255
+          description: Updated subtitle
+        description:
+          type: string
+          maxLength: 2000
+          description: Updated description
+        lyrics:
+          type: string
+          maxLength: 10000
+          description: Updated lyrics
+        stage:
+          type: string
+          enum: [draft, review, published, archived]
+          description: Updated stage
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Updated tags
+
+    Comment:
+      type: object
+      required:
+        - id
+        - song_id
+        - audio_url
+        - content
+        - user_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique comment identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        song_id:
+          type: string
+          format: uuid
+          description: ID of the song being commented on
+          example: "987fcdeb-51d3-43a1-b456-426614174000"
+        audio_url:
+          type: string
+          format: uri
+          description: URL of the specific audio file being commented on
+          example: "https://songs-media.s3.amazonaws.com/audio/uuid.mp3"
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Comment text content
+          example: "Great song! I love the acoustic guitar at 2:30"
+        user_id:
+          type: string
+          description: ID of the user who made the comment
+          example: "user-456"
+        created_at:
+          type: string
+          format: date-time
+          description: Comment creation timestamp
+          example: "2024-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-01-01T00:30:00Z"
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - audio_url
+        - content
+      properties:
+        audio_url:
+          type: string
+          format: uri
+          description: URL of the audio file to comment on
+          example: "https://songs-media.s3.amazonaws.com/audio/uuid.mp3"
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Comment content
+          example: "Amazing work! The melody at 1:45 is incredible"
+
+    UpdateCommentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Updated comment content
+          example: "Updated comment text"
+
+    SongResponse:
+      type: object
+      properties:
+        song:
+          $ref: '#/components/schemas/Song'
+        message:
+          type: string
+          description: Optional response message
+          example: "Song retrieved successfully"
+
+    SongsListResponse:
+      type: object
+      required:
+        - songs
+        - count
+      properties:
+        songs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Song'
+          description: Array of songs
+        next_cursor:
+          type: string
+          description: Cursor for next page of results
+          example: "eyJsYXN0X2V2YWx1YXRlZF9rZXkiOiJ7XCJpZFwiOlwidXVpZFwifSJ9"
+        count:
+          type: integer
+          description: Number of songs in current response
+          example: 20
+
+    CommentResponse:
+      type: object
+      properties:
+        comment:
+          $ref: '#/components/schemas/Comment'
+        message:
+          type: string
+          description: Optional response message
+          example: "Comment retrieved successfully"
+
+    CommentsListResponse:
+      type: object
+      required:
+        - comments
+        - count
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          description: Array of comments
+        next_cursor:
+          type: string
+          description: Cursor for next page of results
+          example: "eyJsYXN0X2V2YWx1YXRlZF9rZXkiOiJ7XCJpZFwiOlwidXVpZFwifSJ9"
+        count:
+          type: integer
+          description: Number of comments in current response
+          example: 10
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - status
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Validation failed"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        path:
+          type: string
+          description: API path that generated the error
+          example: "/api/v1/songs"
+        method:
+          type: string
+          description: HTTP method used
+          example: "POST"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-01T00:00:00Z"
+        details:
+          type: object
+          description: Additional error details (e.g., validation errors)
+          example:
+            field_errors:
+              title: "Title is required"
+              stage: "Invalid stage value"
+
+  responses:
+    BadRequest:
+      description: Bad Request - Validation error or malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Validation failed"
+            status: 400
+            path: "/api/v1/songs"
+            method: "POST"
+            timestamp: "2024-01-01T00:00:00Z"
+            details:
+              field_errors:
+                title: "Title is required and must be between 1 and 255 characters"
+
+    Unauthorized:
+      description: Unauthorized - Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid or missing authentication token"
+            status: 401
+            path: "/api/v1/songs"
+            method: "POST"
+            timestamp: "2024-01-01T00:00:00Z"
+
+    Forbidden:
+      description: Forbidden - User doesn't have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "You don't have permission to access this resource"
+            status: 403
+            path: "/api/v1/songs/123"
+            method: "PUT"
+            timestamp: "2024-01-01T00:00:00Z"
+
+    NotFound:
+      description: Not Found - Resource doesn't exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Song not found"
+            status: 404
+            path: "/api/v1/songs/123"
+            method: "GET"
+            timestamp: "2024-01-01T00:00:00Z"
+
+    InternalServerError:
+      description: Internal Server Error - Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "An unexpected error occurred"
+            status: 500
+            path: "/api/v1/songs"
+            method: "POST"
+            timestamp: "2024-01-01T00:00:00Z"
+
+tags:
+  - name: Health
+    description: API health and status endpoints
+  - name: Public Songs
+    description: Public song endpoints (no authentication required)
+  - name: Songs
+    description: Song management endpoints
+  - name: Song Media
+    description: Song media (images/audio) management
+  - name: Comments
+    description: Comment management endpoints
+  - name: Media
+    description: File upload/download and media management
+  - name: Statistics
+    description: User statistics and analytics
+
+externalDocs:
+  description: Project repository and documentation
+  url: https://github.com/cncde/songs-backend

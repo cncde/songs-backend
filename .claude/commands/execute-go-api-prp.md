@@ -246,7 +246,7 @@ go test ./internal/api/handlers/... -v
 # Go build validation
 go build ./...                                          # Build all packages
 go build -o api cmd/api/main.go                        # Build main binary
-GOOS=linux GOARCH=amd64 go build -o bootstrap cmd/api/main.go  # Lambda build
+GOOS=linux GOARCH=amd64 go build -o main cmd/api/main.go  # Lambda build
 
 # Docker container validation
 docker build -t go-api:test .                          # Build container

@@ -1,8 +1,11 @@
 # Go REST API Template
 
-🚀 **Production-ready Go REST API template with AWS Lambda containerized deployment, JWT authentication, DynamoDB integration, and S3 file handling.**
+🚀 **Production-ready Go REST API template with AWS Lambda containerized
+deployment, JWT authentication, DynamoDB integration, and S3 file handling.**
 
-This template enables rapid development of secure, scalable Go APIs with comprehensive AWS service integration, following Go best practices and context engineering principles.
+This template enables rapid development of secure, scalable Go APIs with
+comprehensive AWS service integration, following Go best practices and context
+engineering principles.
 
 ## 🚀 Quick Start - Copy Template First
 
@@ -28,7 +31,8 @@ The copy script includes:
 
 ## 📋 PRP Framework Workflow
 
-This template follows the **3-step PRP (Problem-Research-Plan) framework** for systematic API development:
+This template follows the **3-step PRP (Problem-Research-Plan) framework**
+for systematic API development:
 
 ### Step 1: Define Requirements (INITIAL.md)
 
@@ -113,8 +117,10 @@ This template is optimized for building:
 
 ### 🏗️ **Go Framework Integration**
 
-- **[Gin](https://gin-gonic.com/)**: High-performance HTTP framework (40x faster than Martini)
-- **[AWS SDK for Go v2](https://aws.github.io/aws-sdk-go-v2/)**: Modern AWS service integration
+- **[Gin](https://gin-gonic.com/)**: High-performance HTTP framework
+  (40x faster than Martini)
+- **[AWS SDK for Go v2](https://aws.github.io/aws-sdk-go-v2/)**: Modern AWS
+  service integration
 - **[golang-jwt](https://github.com/golang-jwt/jwt)**: Secure JWT token handling
 - **Standard Project Layout**: Following [golang-standards/project-layout](https://github.com/golang-standards/project-layout)
 
@@ -184,9 +190,11 @@ go run main.go
 
 ### **Go-Specific Pitfalls**
 
-- ⚠️ **Error Handling**: Always check and handle errors explicitly - don't ignore them
+- ⚠️ **Error Handling**: Always check and handle errors explicitly - don't
+  ignore them
 - ⚠️ **Goroutine Leaks**: Ensure proper cleanup and context cancellation
-- ⚠️ **Interface Design**: Keep interfaces small and focused ("accept interfaces, return structs")
+- ⚠️ **Interface Design**: Keep interfaces small and focused ("accept
+  interfaces, return structs")
 - ⚠️ **Memory Management**: Be aware of allocations in hot paths and HTTP handlers
 
 ### **AWS Lambda Gotchas**
@@ -200,13 +208,16 @@ go run main.go
 
 - ⚠️ **Hot Partitions**: Design partition keys to distribute load evenly
 - ⚠️ **Query vs Scan**: Prefer Query operations over Scan for performance
-- ⚠️ **Item Size Limits**: Keep items under 400KB, design for efficient storage
-- ⚠️ **Eventually Consistent**: Use strongly consistent reads when data consistency is critical
+- ⚠️ **Item Size Limits**: Keep items under 400KB, design for efficient
+  storage
+- ⚠️ **Eventually Consistent**: Use strongly consistent reads when data
+  consistency is critical
 
 ### **Security Gotchas**
 
 - ⚠️ **JWT Validation**: Always validate ALL claims (exp, aud, iss), not just signature
-- ⚠️ **Input Sanitization**: Validate all inputs including file uploads and query parameters
+- ⚠️ **Input Sanitization**: Validate all inputs including file uploads and
+  query parameters
 - ⚠️ **Error Information**: Don't leak sensitive information in error responses
 - ⚠️ **CORS Configuration**: Configure CORS properly for web application integration
 
@@ -229,7 +240,7 @@ go test -cover ./...
 
 # Building
 go build ./...
-GOOS=linux GOARCH=amd64 go build -o bootstrap cmd/api/main.go
+GOOS=linux GOARCH=amd64 go build -o main cmd/api/main.go
 ```
 
 ### **Docker Commands**
@@ -283,4 +294,6 @@ aws lambda update-function-code --function-name my-go-api --image-uri <ecr-uri>/
 
 **🌟 Happy building with Go APIs!**
 
-This template provides everything you need to create production-ready Go REST APIs with AWS integration. Start with the examples, follow the PRP workflow, and build amazing APIs!
+This template provides everything you need to create production-ready Go REST
+APIs with AWS integration. Start with the examples, follow the PRP workflow,
+and build amazing APIs!
