@@ -20,7 +20,15 @@ separate folder with terraform modules.
 
 ## EXAMPLES & DOCUMENTATION
 
-All examples are already referenced in prp_mcp_base.md - do any additional research as needed.
+All examples are already referenced in prp_mcp_base.md - do any additional research as needed. Include reading the
+following articles for best practices:
+
+- https://grafana.com/blog/2024/02/09/how-i-write-http-services-in-go-after-13-years/
+- https://go.dev/wiki/CodeReviewComments
+
+Ignore thiese pages/repositories:
+
+- https://github.com/golang-standards
 
 ## OTHER CONSIDERATIONS
 

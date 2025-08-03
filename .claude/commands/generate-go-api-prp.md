@@ -1,6 +1,6 @@
 # Generate Go API PRP
 
-## Feature file: PRPs/INITIAL.md
+## Feature file: $ARGUMENTS
 
 Generate a comprehensive PRP for Go REST API development with AWS Lambda containerized deployment, JWT authentication, DynamoDB data persistence, and S3 file handling based on the detailed requirements in the INITIAL.md file.
 
